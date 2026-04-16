@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GVP.OS | Titan Hub</title>
+
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#6366f1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="https://ui-avatars.com/api/?name=GVP&background=6366f1&color=fff&size=192">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0f172a;
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* EFEITO GLASSMORPHISM TITAN */
+        .module-card {
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid rgba(255,255,255,0.05);
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(12px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .module-card:hover {
+            transform: translateY(-15px);
+            border-color: #6366f1;
+            background: rgba(99, 102, 241, 0.08);
+            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.6);
+        }
+
+        .module-card::before {
+            content: "";
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+            transition: 0.5s;
+        }
+
+        .module-card:hover::before { left: 100%; }
+
+        .animate-fade {
+            animation: fadeIn 1s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+            opacity: 0;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .delay-1 { animation-delay: 0.2s; }
+        .delay-2 { animation-delay: 0.4s; }
+    </style>
+</head>
+<body class="p-6 md:p-12">
+
+    <header class="max-w-6xl w-full flex flex-col md:flex-row items-center justify-between mb-16 animate-fade">
+        <div class="flex items-center gap-6">
+            <div class="relative group">
+                <img id="user-avatar" src="https://ui-avatars.com/api/?name=User&background=6366f1&color=fff"
+                     class="w-24 h-24 rounded-[32px] object-cover border-4 border-indigo-500/20 shadow-2xl transition-all group-hover:border-indigo-500">
+                <div class="absolute -bottom-1 -right-1 bg-emerald-500 w-5 h-5 rounded-lg border-4 border-[#0f172a]"></div>
+            </div>
+            <div class="text-left">
+                <h1 class="text-5xl font-[900] tracking-tighter leading-none mb-2">GVP<span class="text-indigo-500">.OS</span></h1>
+                <p id="user-name" class="text-slate-300 font-bold text-xl italic tracking-tight">Operador Padrão</p>
+                <p id="user-mantra" class="text-slate-500 uppercase tracking-[0.4em] text-[7px] font-black mt-2 bg-slate-800/50 px-3 py-1 rounded-full inline-block">Sincronização Titan Ativa</p>
+            </div>
+        </div>
+
+        <div class="flex gap-4 mt-8 md:mt-0">
+            <a href="config.html" class="p-5 bg-slate-800/40 rounded-3xl border border-slate-700 hover:border-indigo-500 transition-all group shadow-xl">
+                <span class="text-2xl group-hover:rotate-180 block transition-transform duration-500">⚙️</span>
+            </a>
+        </div>
+    </header>
+
+    <main class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl w-full animate-fade delay-1">
+
+        <a href="tarefas.html" class="module-card p-10 rounded-[50px] group">
+            <div class="text-5xl mb-6 group-hover:rotate-12 transition-transform">📊</div>
+            <h2 class="text-2xl font-black mb-3">Projetos & Gantt</h2>
+            <p class="text-slate-400 text-sm leading-relaxed">Timeline infinita, Eisenhower e motor de hierarquia.</p>
+        </a>
+
+        <a href="notas.html" class="module-card p-10 rounded-[50px] group">
+            <div class="text-5xl mb-6 group-hover:rotate-12 transition-transform">📝</div>
+            <h2 class="text-2xl font-black mb-3">Memória & Atas</h2>
+            <p class="text-slate-400 text-sm leading-relaxed">Registro de reuniões com comando /T sincronizado.</p>
+        </a>
+
+        <a href="financeiro.html" class="module-card p-10 rounded-[50px] group">
+            <div class="text-5xl mb-6 group-hover:rotate-12 transition-transform">💰</div>
+            <h2 class="text-2xl font-black mb-3">Financeiro</h2>
+            <p class="text-slate-400 text-sm leading-relaxed">Fluxo multicontas, categorias e inteligência de gastos.</p>
+        </a>
+
+        <a href="saude.html" class="module-card p-10 rounded-[50px] group">
+            <div class="text-5xl mb-6 group-hover:rotate-12 transition-transform">❤️</div>
+            <h2 class="text-2xl font-black mb-3">Saúde</h2>
+            <p class="text-slate-400 text-sm leading-relaxed">Log de bio-performance, treinos e monitoramento vital.</p>
+        </a>
+
+        <a href="estoque.html" class="module-card p-10 rounded-[50px] group">
+            <div class="text-5xl mb-6 group-hover:rotate-12 transition-transform">📦</div>
+            <h2 class="text-2xl font-black mb-3">Arquivo</h2>
+            <p class="text-slate-400 text-sm leading-relaxed">Cofre de tarefas concluídas e inteligência de estoque.</p>
+        </a>
+
+        <div class="module-card p-10 rounded-[50px] bg-indigo-950/20 border-indigo-500/20 flex flex-col justify-between">
+            <div>
+                <div class="text-5xl mb-6">💾</div>
+                <h2 class="text-2xl font-black mb-3">Backup Master</h2>
+                <p class="text-slate-400 text-sm leading-relaxed mb-6">Exportação e importação de todo o banco Titan.</p>
+            </div>
+
+            <div class="space-y-3">
+                <button onclick="exportTitanBackup()" class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black hover:bg-indigo-500 transition-all uppercase text-[10px] tracking-widest">
+                    Exportar Backup
+                </button>
+                <button onclick="document.getElementById('importFile').click()" class="w-full py-4 bg-slate-800 text-white rounded-2xl font-black hover:bg-slate-700 transition-all uppercase text-[10px] tracking-widest border border-slate-700">
+                    Importar Backup
+                </button>
+                <input type="file" id="importFile" class="hidden" onchange="importTitanBackup(event)">
+            </div>
+        </div>
+    </main>
+
+    <footer class="mt-20 animate-fade delay-2 text-slate-700 text-[9px] font-black uppercase tracking-[0.6em]">
+        GVP.OS &bull; Sincronização em Tempo Real &bull; v1.0 Titan
+    </footer>
+
+    <script>
+        // MOTOR PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').catch(err => console.log('PWA: Offline mode ativo'));
+            });
+        }
+
+        // CARREGAMENTO DE PERFIL
+        function loadProfile() {
+            const profile = JSON.parse(localStorage.getItem('gtitan_profile')) || {};
+            if (profile.name) document.getElementById('user-name').innerText = `Operador ${profile.name}`;
+            if (profile.mantra) document.getElementById('user-mantra').innerText = profile.mantra;
+            if (profile.avatar) document.getElementById('user-avatar').src = profile.avatar;
+        }
+
+        // EXPORTAÇÃO COMPLETA (TUDO)
+        function exportTitanBackup() {
+            const backup = {};
+            const keys = ['gtitan_tasks', 'gtitan_completed', 'gtitan_notes', 'gtitan_finances', 'gtitan_health', 'gtitan_profile'];
+            keys.forEach(key => {
+                backup[key] = JSON.parse(localStorage.getItem(key)) || (key === 'gtitan_profile' ? {} : []);
+            });
+
+            const blob = new Blob([JSON.stringify(backup, null, 2)], {type: 'application/json'});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `GVP_TITAN_BACKUP_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+        }
+
+        // IMPORTAÇÃO COMPLETA
+        function importTitanBackup(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    Object.keys(data).forEach(key => {
+                        if (key.startsWith('gtitan_')) {
+                            localStorage.setItem(key, JSON.stringify(data[key]));
+                        }
+                    });
+                    alert("Sincronização completa realizada!");
+                    location.reload();
+                } catch (err) { alert("Arquivo inválido!"); }
+            };
+            reader.readAsText(file);
+        }
+
+        document.addEventListener('DOMContentLoaded', loadProfile);
+    </script>
+</body>
+</html>
