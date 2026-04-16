@@ -50,10 +50,17 @@
     </div>
 
     <script>
-        let completed = JSON.parse(localStorage.getItem('gtitan_completed')) || [];
-        let activeTasks = JSON.parse(localStorage.getItem('gtitan_tasks')) || [];
+        // Sincronização com o banco central do GVP.OS
+        function getCompleted() {
+            return JSON.parse(localStorage.getItem('gtitan_completed')) || [];
+        }
+
+        function getActiveTasks() {
+            return JSON.parse(localStorage.getItem('gtitan_tasks')) || [];
+        }
 
         function renderCompleted(filter = '') {
+            const completed = getCompleted();
             const grid = document.getElementById('completed-grid');
             const empty = document.getElementById('empty-state');
             const counter = document.getElementById('counter');
@@ -74,14 +81,16 @@
                     <div>
                         <div class="flex justify-between items-start mb-4">
                             <span class="bg-emerald-100 text-emerald-600 text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-tighter">Concluída</span>
-                            <span class="text-[9px] font-bold text-slate-400 uppercase">${new Date(t.start).toLocaleDateString('pt-br')}</span>
+                            <span class="text-[9px] font-bold text-slate-400 uppercase">
+                                ${t.completedAt ? new Date(t.completedAt).toLocaleDateString('pt-br') : new Date(t.start).toLocaleDateString('pt-br')}
+                            </span>
                         </div>
                         <h3 class="text-lg font-black text-slate-800 mb-2 leading-tight">${t.title}</h3>
                         <p class="text-xs text-slate-400 font-medium mb-6">Duração registrada: ${t.duration || 0} min</p>
                     </div>
 
                     <div class="flex gap-3 pt-6 border-t border-slate-50">
-                        <button onclick="restoreTask(${t.id})" class="flex-1 bg-slate-900 text-white py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-all">Restaurar</button>
+                        <button onclick="restoreTask(${t.id})" class="flex-1 bg-slate-900 text-white py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-all">Restaurar para Timeline</button>
                         <button onclick="deleteForever(${t.id})" class="p-3 bg-slate-50 text-slate-400 rounded-2xl hover:text-rose-500 transition-all">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -98,36 +107,43 @@
         }
 
         function restoreTask(id) {
-            const index = completed.findIndex(t => t.id === id);
+            let completed = getCompleted();
+            let activeTasks = getActiveTasks();
+
+            const index = completed.findIndex(t => t.id == id);
             if (index !== -1) {
                 const task = completed.splice(index, 1)[0];
-                task.progress = 50; // Retorna com progresso parcial para reavaliação
+
+                // Reseta o status para voltar à vida ativa
+                task.progress = 90;
+                delete task.completedAt; // Remove a marca de conclusão para não bugar a lógica
+
                 activeTasks.push(task);
 
                 localStorage.setItem('gtitan_completed', JSON.stringify(completed));
                 localStorage.setItem('gtitan_tasks', JSON.stringify(activeTasks));
+
                 renderCompleted();
-                alert(`"${task.title}" foi enviada de volta para o Módulo de Projetos.`);
+                alert(`"${task.title}" foi restaurada para a sua Timeline Master.`);
             }
         }
 
         function deleteForever(id) {
-            if(confirm('Esta ação é irreversível. Excluir permanentemente?')) {
-                completed = completed.filter(t => t.id !== id);
+            if(confirm('Esta ação é irreversível. Excluir permanentemente do cofre?')) {
+                let completed = getCompleted();
+                completed = completed.filter(t => t.id != id);
                 localStorage.setItem('gtitan_completed', JSON.stringify(completed));
                 renderCompleted();
             }
         }
 
         function clearHistory() {
-            if(confirm('Tem certeza que deseja apagar TODO o histórico de tarefas concluídas?')) {
-                completed = [];
-                localStorage.setItem('gtitan_completed', JSON.stringify(completed));
+            if(confirm('CUIDADO: Isso apagará TODO o cofre de tarefas concluídas. Continuar?')) {
+                localStorage.setItem('gtitan_completed', JSON.stringify([]));
                 renderCompleted();
             }
         }
 
-        // Inicialização
         document.addEventListener('DOMContentLoaded', () => renderCompleted());
     </script>
 </body>
