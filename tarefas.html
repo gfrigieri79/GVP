@@ -141,6 +141,7 @@
                     <button id="delBtn" type="button" onclick="deleteTask()" class="hidden px-6 py-4 text-rose-500 font-black uppercase text-[10px]">Excluir</button>
                     <div class="flex-1"></div>
                     <button id="addChildBtn" type="button" onclick="initAddChild()" class="hidden bg-emerald-50 text-emerald-600 px-6 py-4 rounded-2xl font-black text-[10px] border border-emerald-100">+ ADICIONAR FILHA</button>
+                    <button id="completeBtn" type="button" onclick="completeTask()" class="hidden bg-emerald-500 text-white px-6 py-4 rounded-2xl font-black text-[10px] shadow-lg hover:bg-emerald-600 transition-all uppercase tracking-widest">Concluir & Arquivar</button>
                     <button type="submit" class="w-full bg-slate-900 text-white rounded-[24px] font-black py-5 shadow-2xl hover:bg-black transition-all uppercase tracking-widest text-xs">Salvar</button>
                 </div>
             </form>
@@ -227,8 +228,12 @@
             document.getElementById('taskForm').reset();
             document.getElementById('taskId').value = id || "";
             document.getElementById('contextParentId').value = pIdContext || "";
+
+            // Controle de visibilidade dos botões de ação
             document.getElementById('delBtn').classList.toggle('hidden', !id);
             document.getElementById('addChildBtn').classList.toggle('hidden', !id);
+            document.getElementById('completeBtn').classList.toggle('hidden', !id);
+
             const ctxInfo = document.getElementById('parentContextInfo');
             if (pIdContext) {
                 const p = findTaskById(tasks, pIdContext);
@@ -302,6 +307,30 @@
             saveSync();
             closeModal();
         };
+
+        // NOVA FUNÇÃO PARA CONCLUIR E ARQUIVAR
+        function completeTask() {
+            let id = document.getElementById('taskId').value;
+            if (!id) return;
+
+            // Remove da árvore principal
+            let taskToArchive = removeFromTree(tasks, id);
+
+            if (taskToArchive) {
+                // Seta progresso em 100 e carimba data de conclusão
+                taskToArchive.progress = 100;
+                taskToArchive.completedAt = new Date().toISOString();
+
+                // Recupera o banco do arquivo, adiciona a nova e salva
+                let completedTasks = JSON.parse(localStorage.getItem('gtitan_completed')) || [];
+                completedTasks.push(taskToArchive);
+                localStorage.setItem('gtitan_completed', JSON.stringify(completedTasks));
+
+                // Sincroniza o Gantt e fecha o modal
+                saveSync();
+                closeModal();
+            }
+        }
 
         function deleteTask() {
             let id = document.getElementById('taskId').value;
