@@ -21,7 +21,6 @@
         .custom-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 
-        /* GANTT ESTRUTURA */
         .gantt-wrapper {
             border: 1px solid #e2e8f0; border-radius: 24px; overflow: hidden; background: white;
             display: grid; grid-template-columns: var(--sidebar-width) 1fr;
@@ -52,12 +51,10 @@
         .gantt-body { position: relative; background-image: linear-gradient(90deg, #f1f5f9 1px, transparent 1px); background-size: var(--day-width) 100%; }
         .gantt-bar { position: absolute; height: 32px; border-radius: 10px; display: flex; align-items: center; padding: 0 12px; color: white; font-size: 10px; font-weight: 800; white-space: nowrap; cursor: pointer; transition: transform 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         
-        /* MATRIZ */
         .matrix-quadrant { min-height: 180px; transition: all 0.3s ease; }
         .modal-blur { backdrop-filter: blur(12px); background-color: rgba(15, 23, 42, 0.6); }
         .fc { background: white; border-radius: 24px; padding: 15px; border: 1px solid #e2e8f0; }
 
-        /* LOGS */
         .log-entry { border-left: 2px solid #e2e8f0; padding-left: 12px; margin-bottom: 12px; position: relative; }
         .log-entry::before { content: ''; position: absolute; left: -5px; top: 0; width: 8px; height: 8px; background: #cbd5e1; border-radius: 50%; }
     </style>
@@ -126,12 +123,12 @@
     </div>
 
     <div id="modal" class="fixed inset-0 hidden items-center justify-center modal-blur z-[100] p-4">
-        <div class="bg-white p-10 rounded-[50px] w-full max-w-5xl shadow-2xl max-h-[95vh] overflow-y-auto custom-scroll border border-slate-100 grid grid-cols-1 lg:grid-cols-2 gap-10">
+        <div class="bg-white p-10 rounded-[50px] w-full max-w-6xl shadow-2xl max-h-[95vh] overflow-y-auto custom-scroll border border-slate-100 grid grid-cols-1 lg:grid-cols-2 gap-10">
             <div>
                 <div id="parentContextInfo" class="mb-6 text-[10px] font-bold text-emerald-600 bg-emerald-50 p-4 rounded-2xl hidden items-center gap-3 border border-emerald-100">
                     <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>Filha de: <span id="contextTaskName" class="text-emerald-900 ml-1"></span>
                 </div>
-                <h3 class="text-2xl font-[900] mb-8 text-slate-900 uppercase tracking-tight">Dados da Tarefa</h3>
+                <h3 class="text-2xl font-[900] mb-8 text-slate-900 uppercase tracking-tight">Configuração de Tarefa</h3>
                 <form id="taskForm" class="grid grid-cols-2 gap-4">
                     <input type="hidden" id="taskId"><input type="hidden" id="contextParentId">
                     <div class="col-span-2"><label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Título</label><input type="text" id="title" class="w-full p-4 bg-slate-50 border rounded-2xl font-bold outline-none" required></div>
@@ -146,6 +143,7 @@
                         <button type="button" onclick="closeModal()" class="px-4 py-3 font-black text-slate-400 uppercase text-[9px]">Fechar</button>
                         <button id="delBtn" type="button" onclick="deleteTask()" class="hidden px-4 py-3 text-rose-500 font-black uppercase text-[9px]">Excluir</button>
                         <div class="flex-1"></div>
+                        <button id="addChildBtn" type="button" onclick="initAddChild()" class="hidden bg-indigo-50 text-indigo-600 px-5 py-3 rounded-xl font-black text-[9px] border border-indigo-100 uppercase tracking-widest">+ Criar Filha</button>
                         <button id="completeBtn" type="button" onclick="completeTask()" class="hidden bg-emerald-500 text-white px-5 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest">Concluir</button>
                         <button type="submit" class="bg-slate-900 text-white rounded-xl font-black px-8 py-3 uppercase tracking-widest text-[9px]">Salvar</button>
                     </div>
@@ -179,7 +177,6 @@
             scrollToToday();
         });
 
-        // RECOLHER/EXPANDIR
         function toggleCollapse(id) {
             const task = findTaskById(tasks, id);
             if (task) { task.collapsed = !task.collapsed; saveSync(); }
@@ -214,7 +211,48 @@
             if (diffDays > 0) container.scrollLeft = (diffDays * 35) - (container.offsetWidth / 2);
         }
 
-        // LOGS
+        function openModal(id = null, date = null, pIdContext = null) {
+            document.getElementById('taskForm').reset();
+            document.getElementById('taskId').value = id || "";
+            document.getElementById('contextParentId').value = pIdContext || "";
+            document.getElementById('delBtn').classList.toggle('hidden', !id);
+            document.getElementById('completeBtn').classList.toggle('hidden', !id);
+            document.getElementById('addChildBtn').classList.toggle('hidden', !id);
+            document.getElementById('newLogText').value = "";
+            const ctxInfo = document.getElementById('parentContextInfo');
+            if (pIdContext) {
+                const p = findTaskById(tasks, pIdContext);
+                document.getElementById('contextTaskName').innerText = p ? p.title : "";
+                ctxInfo.classList.replace('hidden', 'flex');
+            } else { ctxInfo.classList.replace('flex', 'hidden'); }
+            if (date) document.getElementById('start').value = date;
+            const datalist = document.getElementById('parentTasksList');
+            datalist.innerHTML = getAllTitles(tasks, id).map(t => `<option value="${t.title}" data-id="${t.id}">`).join('');
+            let t = findTaskById(tasks, id);
+            if (t) {
+                document.getElementById('title').value = t.title;
+                document.getElementById('start').value = t.start;
+                document.getElementById('end').value = t.end || t.start;
+                document.getElementById('duration').value = t.duration;
+                document.getElementById('progress').value = t.progress;
+                document.getElementById('priority').value = t.priority;
+                document.getElementById('importance').value = t.importance;
+                let p = findParent(tasks, id);
+                document.getElementById('parentIdSearch').value = p ? p.title : "";
+                renderLogs(t.logs);
+            } else { renderLogs([]); }
+            document.getElementById('modal').classList.replace('hidden', 'flex');
+        }
+
+        function closeModal() { document.getElementById('modal').classList.replace('flex', 'hidden'); }
+
+        function initAddChild() {
+            const currentId = document.getElementById('taskId').value;
+            const currentStart = document.getElementById('start').value;
+            document.getElementById('taskForm').dispatchEvent(new Event('submit'));
+            setTimeout(() => { openModal(null, currentStart, currentId); }, 200);
+        }
+
         function addLog() {
             const id = document.getElementById('taskId').value;
             const text = document.getElementById('newLogText').value.trim();
@@ -237,41 +275,13 @@
             container.innerHTML = logs.map(l => `<div class="log-entry"><p class="text-[11px] text-slate-600 font-medium">${l.text}</p></div>`).join('');
         }
 
-        // MODAL ACTIONS
-        function openModal(id = null, date = null, pIdContext = null) {
-            document.getElementById('taskForm').reset();
-            document.getElementById('taskId').value = id || "";
-            document.getElementById('contextParentId').value = pIdContext || "";
-            document.getElementById('delBtn').classList.toggle('hidden', !id);
-            document.getElementById('completeBtn').classList.toggle('hidden', !id);
-            document.getElementById('newLogText').value = "";
-            if (date) document.getElementById('start').value = date;
-            const datalist = document.getElementById('parentTasksList');
-            datalist.innerHTML = getAllTitles(tasks, id).map(t => `<option value="${t.title}" data-id="${t.id}">`).join('');
-            let t = findTaskById(tasks, id);
-            if (t) {
-                document.getElementById('title').value = t.title;
-                document.getElementById('start').value = t.start;
-                document.getElementById('end').value = t.end || t.start;
-                document.getElementById('duration').value = t.duration;
-                document.getElementById('progress').value = t.progress;
-                document.getElementById('priority').value = t.priority;
-                document.getElementById('importance').value = t.importance;
-                let p = findParent(tasks, id);
-                document.getElementById('parentIdSearch').value = p ? p.title : "";
-                renderLogs(t.logs);
-            } else { renderLogs([]); }
-            document.getElementById('modal').classList.replace('hidden', 'flex');
-        }
-
-        function closeModal() { document.getElementById('modal').classList.replace('flex', 'hidden'); }
-
         document.getElementById('taskForm').onsubmit = function(e) {
             e.preventDefault();
             let id = document.getElementById('taskId').value;
             let parentSearchName = document.getElementById('parentIdSearch').value;
+            let contextParentId = document.getElementById('contextParentId').value;
             let parentOption = Array.from(document.querySelectorAll('#parentTasksList option')).find(o => o.value === parentSearchName);
-            let finalParentId = parentOption ? parentOption.getAttribute('data-id') : null;
+            let finalParentId = parentOption ? parentOption.getAttribute('data-id') : (contextParentId || null);
             let data;
             if (id) {
                 let existing = findTaskById(tasks, id);
@@ -297,10 +307,8 @@
         }
 
         function deleteTask() { let id = document.getElementById('taskId').value; removeFromTree(tasks, id); saveSync(); closeModal(); }
-
         function saveSync() { localStorage.setItem('gtitan_tasks', JSON.stringify(tasks)); renderAll(); }
 
-        // RENDER MASTER
         function renderAll() {
             ['q1', 'q2', 'q3', 'q4', 'qFast'].forEach(q => { const el = document.querySelector(`#${q} .list`); if(el) el.innerHTML = ''; });
             const sidebar = document.getElementById('gantt-sidebar');
@@ -309,12 +317,10 @@
             const dayHeader = document.getElementById('day-header');
             sidebar.innerHTML = ''; body.innerHTML = ''; monthHeader.innerHTML = ''; dayHeader.innerHTML = '';
             calendar.removeAllEvents();
-
             let lastDate = new Date();
             const findLast = (list) => { list.forEach(t => { const end = new Date(t.end || t.start); if (end > lastDate) lastDate = end; if (t.children) findLast(t.children); }); };
             findLast(tasks);
             const totalMonths = Math.max(12, (((lastDate.getFullYear() - START_DATE.getFullYear()) * 12) + (lastDate.getMonth() - START_DATE.getMonth())) + 2);
-
             let totalDays = 0;
             for(let m=0; m<totalMonths; m++) {
                 let d = new Date(START_DATE.getFullYear(), START_DATE.getMonth() + m, 1);
@@ -330,7 +336,6 @@
             }
             body.style.width = `${totalDays * 35}px`;
             document.getElementById('gantt-header').style.width = `${totalDays * 35}px`;
-
             let rowIdx = 0;
             const process = (t, lv=0, isHidden = false) => {
                 const color = getHexColor(t);
@@ -361,7 +366,6 @@
             tasks.forEach(t => process(t));
             body.style.height = `${rowIdx * 52 + 50}px`;
         }
-
         function getQuadrant(t) { if (t.priority==='high' && t.importance==='high') return 'q1'; if (t.priority==='low' && t.importance==='high') return 'q2'; if (t.priority==='high' && t.importance==='low') return 'q3'; return 'q4'; }
         function getHexColor(t) { if (t.priority==='high' && t.importance==='high') return '#f43f5e'; if (t.importance==='high') return '#6366f1'; if (t.priority==='high') return '#f59e0b'; return '#94a3b8'; }
     </script>
