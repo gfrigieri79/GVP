@@ -98,7 +98,8 @@
         <div class="grid grid-cols-1 xl:grid-cols-12 gap-8">
             <div class="xl:col-span-8 space-y-8">
                 <section class="bg-white p-8 rounded-[40px] shadow-sm border border-slate-200">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div id="qFast" class="matrix-quadrant bg-emerald-50/40 p-6 rounded-[32px] border-2 border-emerald-100/50"><span class="text-[10px] font-black text-emerald-600 uppercase tracking-widest block mb-4">⚡ Fazer Rápido (< 6 min)</span><div class="list space-y-3"></div></div>
                         <div id="q1" class="matrix-quadrant bg-rose-50/40 p-6 rounded-[32px] border-2 border-rose-100/50"><span class="text-[10px] font-black text-rose-600 uppercase tracking-widest block mb-4">🚨 Urgente & Importante</span><div class="list space-y-3"></div></div>
                         <div id="q2" class="matrix-quadrant bg-indigo-50/40 p-6 rounded-[32px] border-2 border-indigo-100/50"><span class="text-[10px] font-black text-indigo-600 uppercase tracking-widest block mb-4">📅 Planejamento</span><div class="list space-y-3"></div></div>
                         <div id="q3" class="matrix-quadrant bg-amber-50/40 p-6 rounded-[32px] border-2 border-amber-100/50"><span class="text-[10px] font-black text-amber-600 uppercase tracking-widest block mb-4">🤝 Delegar</span><div class="list space-y-3"></div></div>
@@ -337,7 +338,12 @@
         function saveSync() { localStorage.setItem('gtitan_tasks', JSON.stringify(tasks)); renderAll(); }
 
         function renderAll() {
-            ['q1', 'q2', 'q3', 'q4'].forEach(q => document.querySelector(`#${q} .list`).innerHTML = '');
+            // Limpa todos os quadrantes, incluindo o novo qFast
+            ['q1', 'q2', 'q3', 'q4', 'qFast'].forEach(q => {
+                const el = document.querySelector(`#${q} .list`);
+                if(el) el.innerHTML = '';
+            });
+
             const sidebar = document.getElementById('gantt-sidebar');
             const body = document.getElementById('gantt-body');
             const monthHeader = document.getElementById('month-header');
@@ -378,10 +384,21 @@
 
                 if (!isHidden) {
                     if (!hasChildren) {
-                        const qId = getQuadrant(t);
-                        document.querySelector(`#${qId} .list`).innerHTML += `<div onclick="openModal(${t.id})" class="bg-white p-3 rounded-2xl shadow-sm border-l-4 cursor-pointer hover:scale-[1.02] transition-all flex justify-between items-center group" style="border-left-color:${color}"><span class="text-[11px] font-bold text-slate-700">${lv>0?'↳ ':''}${t.title}</span><span class="text-[9px] font-black text-slate-300">${t.progress}%</span></div>`;
+                        // Lógica de Quadrantes com Filtro "Fazer Rápido"
+                        let qId;
+                        if (t.duration < 6) {
+                            qId = 'qFast';
+                        } else {
+                            qId = getQuadrant(t);
+                        }
+
+                        const targetQuadrante = document.querySelector(`#${qId} .list`);
+                        if (targetQuadrante) {
+                            targetQuadrante.innerHTML += `<div onclick="openModal(${t.id})" class="bg-white p-3 rounded-2xl shadow-sm border-l-4 cursor-pointer hover:scale-[1.02] transition-all flex justify-between items-center group" style="border-left-color:${t.duration < 6 ? '#10b981' : color}"><span class="text-[11px] font-bold text-slate-700">${lv>0?'↳ ':''}${t.title}</span><span class="text-[9px] font-black text-slate-300">${t.progress}%</span></div>`;
+                        }
+
                         let calE = new Date(t.end || t.start); calE.setDate(calE.getDate()+1);
-                        calendar.addEvent({ id: t.id, title: t.title, start: t.start, end: calE.toISOString().split('T')[0], backgroundColor: color });
+                        calendar.addEvent({ id: t.id, title: t.title, start: t.start, end: calE.toISOString().split('T')[0], backgroundColor: t.duration < 6 ? '#10b981' : color });
                     }
 
                     const sidebarLabel = document.createElement('div');
@@ -407,7 +424,7 @@
                     const bar = document.createElement('div');
                     bar.className = 'gantt-bar';
                     bar.style.left = `${offsetDays * 35}px`; bar.style.width = `${durationDays * 35}px`; bar.style.top = `${(rowIdx * 52) + 10}px`;
-                    bar.style.backgroundColor = color; bar.onclick = () => openModal(t.id);
+                    bar.style.backgroundColor = t.duration < 6 ? '#10b981' : color; bar.onclick = () => openModal(t.id);
                     bar.innerHTML = `<span class="truncate ml-2 text-[9px] font-black">${t.progress}%</span>`;
                     body.appendChild(bar);
                     rowIdx++;
