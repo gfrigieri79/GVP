@@ -54,6 +54,22 @@
             padding: 0 20px; font-size: 12px; font-weight: 600; color: #475569;
         }
 
+        .collapse-btn {
+            cursor: pointer;
+            margin-right: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 900;
+            transition: all 0.2s;
+        }
+        .collapse-btn:hover { background: #6366f1; color: white; }
+
         .gantt-body { position: relative; background-image: linear-gradient(90deg, #f1f5f9 1px, transparent 1px); background-size: var(--day-width) 100%; }
 
         .gantt-bar {
@@ -166,28 +182,12 @@
             scrollToToday();
         });
 
-        function scrollToToday() {
-            const container = document.getElementById('gantt-scroll-container');
-            const today = new Date();
-            const diffDays = Math.floor((today - START_DATE) / 86400000);
-            if (diffDays > 0) {
-                container.scrollLeft = (diffDays * 35) - (container.offsetWidth / 2);
+        function toggleCollapse(id) {
+            const task = findTaskById(tasks, id);
+            if (task) {
+                task.collapsed = !task.collapsed;
+                saveSync();
             }
-        }
-
-        function getRequiredMonths() {
-            let lastDate = new Date();
-            const findLast = (list) => {
-                list.forEach(t => {
-                    const end = new Date(t.end || t.start);
-                    if (end > lastDate) lastDate = end;
-                    if (t.children) findLast(t.children);
-                });
-            };
-            findLast(tasks);
-            const diffYears = lastDate.getFullYear() - START_DATE.getFullYear();
-            const diffMonths = (diffYears * 12) + (lastDate.getMonth() - START_DATE.getMonth());
-            return Math.max(12, diffMonths + 2);
         }
 
         function findTaskById(list, id) {
@@ -220,6 +220,13 @@
                 if(t.children) titles = [...titles, ...getAllTitles(t.children, currentId)];
             });
             return titles;
+        }
+
+        function scrollToToday() {
+            const container = document.getElementById('gantt-scroll-container');
+            const today = new Date();
+            const diffDays = Math.floor((today - START_DATE) / 86400000);
+            if (diffDays > 0) container.scrollLeft = (diffDays * 35) - (container.offsetWidth / 2);
         }
 
         function openModal(id = null, date = null, pIdContext = null) {
@@ -293,7 +300,8 @@
                     id: Date.now(), title: document.getElementById('title').value, start: document.getElementById('start').value,
                     end: document.getElementById('end').value || document.getElementById('start').value,
                     duration: parseInt(document.getElementById('duration').value), progress: parseInt(document.getElementById('progress').value),
-                    priority: document.getElementById('priority').value, importance: document.getElementById('importance').value, children: []
+                    priority: document.getElementById('priority').value, importance: document.getElementById('importance').value, 
+                    children: [], collapsed: false
                 };
             }
             if (finalParentId) {
@@ -337,7 +345,11 @@
             sidebar.innerHTML = ''; body.innerHTML = ''; monthHeader.innerHTML = ''; dayHeader.innerHTML = '';
             calendar.removeAllEvents();
 
-            const totalMonths = getRequiredMonths();
+            let lastDate = new Date();
+            const findLast = (list) => { list.forEach(t => { const end = new Date(t.end || t.start); if (end > lastDate) lastDate = end; if (t.children) findLast(t.children); }); };
+            findLast(tasks);
+            const diffMonths = ((lastDate.getFullYear() - START_DATE.getFullYear()) * 12) + (lastDate.getMonth() - START_DATE.getMonth());
+            const totalMonths = Math.max(12, diffMonths + 2);
             const todayStr = new Date().toISOString().split('T')[0];
 
             let totalDays = 0;
@@ -345,55 +357,62 @@
                 let d = new Date(START_DATE.getFullYear(), START_DATE.getMonth() + m, 1);
                 let daysInMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
                 let mCell = document.createElement('div');
-                mCell.className = 'month-cell';
-                mCell.style.width = `${daysInMonth * 35}px`;
+                mCell.className = 'month-cell'; mCell.style.width = `${daysInMonth * 35}px`;
                 mCell.innerText = d.toLocaleString('pt-br', {month:'long', year:'numeric'});
                 monthHeader.appendChild(mCell);
-
                 for(let i=1; i<=daysInMonth; i++) {
                     totalDays++;
                     let dCell = document.createElement('div');
                     dCell.className = 'day-cell';
-                    let currentLoopDate = new Date(d.getFullYear(), d.getMonth(), i).toISOString().split('T')[0];
-                    if (currentLoopDate === todayStr) dCell.classList.add('day-today');
-                    dCell.innerText = i;
-                    dayHeader.appendChild(dCell);
+                    if (new Date(d.getFullYear(), d.getMonth(), i).toISOString().split('T')[0] === todayStr) dCell.classList.add('day-today');
+                    dCell.innerText = i; dayHeader.appendChild(dCell);
                 }
             }
-
-            const totalWidth = totalDays * 35;
-            body.style.width = `${totalWidth}px`;
-            document.getElementById('gantt-header').style.width = `${totalWidth}px`;
+            body.style.width = `${totalDays * 35}px`;
+            document.getElementById('gantt-header').style.width = `${totalDays * 35}px`;
 
             let rowIdx = 0;
-            const process = (t, lv=0) => {
+            const process = (t, lv=0, isHidden = false) => {
                 const color = getHexColor(t);
-                
-                // VERIFICAÇÃO SE É PAI/MÃE (tem filhos)
-                const isParent = t.children && t.children.length > 0;
+                const hasChildren = t.children && t.children.length > 0;
 
-                // SÓ ADICIONA NA MATRIZ E NO CALENDÁRIO SE NÃO FOR PAI
-                if (!isParent) {
-                    const qId = getQuadrant(t);
-                    document.querySelector(`#${qId} .list`).innerHTML += `<div onclick="openModal(${t.id})" class="bg-white p-3 rounded-2xl shadow-sm border-l-4 cursor-pointer hover:scale-[1.02] transition-all flex justify-between items-center group" style="border-left-color:${color}"><span class="text-[11px] font-bold text-slate-700">${lv>0?'↳ ':''}${t.title}</span><span class="text-[9px] font-black text-slate-300">${t.progress}%</span></div>`;
+                if (!isHidden) {
+                    if (!hasChildren) {
+                        const qId = getQuadrant(t);
+                        document.querySelector(`#${qId} .list`).innerHTML += `<div onclick="openModal(${t.id})" class="bg-white p-3 rounded-2xl shadow-sm border-l-4 cursor-pointer hover:scale-[1.02] transition-all flex justify-between items-center group" style="border-left-color:${color}"><span class="text-[11px] font-bold text-slate-700">${lv>0?'↳ ':''}${t.title}</span><span class="text-[9px] font-black text-slate-300">${t.progress}%</span></div>`;
+                        let calE = new Date(t.end || t.start); calE.setDate(calE.getDate()+1);
+                        calendar.addEvent({ id: t.id, title: t.title, start: t.start, end: calE.toISOString().split('T')[0], backgroundColor: color });
+                    }
 
-                    let calE = new Date(t.end || t.start); calE.setDate(calE.getDate()+1);
-                    calendar.addEvent({ id: t.id, title: t.title, start: t.start, end: calE.toISOString().split('T')[0], backgroundColor: color });
+                    const sidebarLabel = document.createElement('div');
+                    sidebarLabel.className = 'gantt-row-label truncate';
+                    sidebarLabel.style.paddingLeft = `${20 + (lv * 20)}px`;
+                    
+                    if (hasChildren) {
+                        const btn = document.createElement('span');
+                        btn.className = 'collapse-btn';
+                        btn.innerText = t.collapsed ? '+' : '-';
+                        btn.onclick = (e) => { e.stopPropagation(); toggleCollapse(t.id); };
+                        sidebarLabel.appendChild(btn);
+                    } else if (lv > 0) { sidebarLabel.innerHTML += '└ '; }
+                    
+                    const titleNode = document.createElement('span');
+                    titleNode.innerText = t.title; titleNode.className = 'cursor-pointer';
+                    titleNode.onclick = () => openModal(t.id);
+                    sidebarLabel.appendChild(titleNode);
+                    sidebar.appendChild(sidebarLabel);
+
+                    const offsetDays = Math.floor((new Date(t.start + 'T12:00:00') - START_DATE) / 86400000);
+                    const durationDays = Math.max(1, Math.floor((new Date((t.end || t.start) + 'T12:00:00') - new Date(t.start + 'T12:00:00')) / 86400000) + 1);
+                    const bar = document.createElement('div');
+                    bar.className = 'gantt-bar';
+                    bar.style.left = `${offsetDays * 35}px`; bar.style.width = `${durationDays * 35}px`; bar.style.top = `${(rowIdx * 52) + 10}px`;
+                    bar.style.backgroundColor = color; bar.onclick = () => openModal(t.id);
+                    bar.innerHTML = `<span class="truncate ml-2 text-[9px] font-black">${t.progress}%</span>`;
+                    body.appendChild(bar);
+                    rowIdx++;
                 }
-
-                // O GANTT CONTINUA MOSTRANDO TUDO (PARA MANTER A ESTRUTURA)
-                const offsetDays = Math.floor((new Date(t.start + 'T12:00:00') - START_DATE) / 86400000);
-                const durationDays = Math.max(1, Math.floor((new Date((t.end || t.start) + 'T12:00:00') - new Date(t.start + 'T12:00:00')) / 86400000) + 1);
-
-                sidebar.innerHTML += `<div class="gantt-row-label truncate" style="padding-left:${20+(lv*20)}px">${lv>0?'└ ':''}${t.title}</div>`;
-                const bar = document.createElement('div');
-                bar.className = 'gantt-bar';
-                bar.style.left = `${offsetDays * 35}px`; bar.style.width = `${durationDays * 35}px`; bar.style.top = `${(rowIdx * 52) + 10}px`;
-                bar.style.backgroundColor = color; bar.onclick = () => openModal(t.id);
-                bar.innerHTML = `<span class="truncate ml-2 text-[9px] font-black">${t.progress}%</span>`;
-                body.appendChild(bar);
-                rowIdx++;
-                if(t.children) t.children.forEach(ch => process(ch, lv+1));
+                if(t.children) t.children.forEach(ch => process(ch, lv+1, isHidden || t.collapsed));
             };
             tasks.forEach(t => process(t));
             body.style.height = `${rowIdx * 52 + 50}px`;
