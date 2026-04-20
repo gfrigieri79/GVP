@@ -152,7 +152,7 @@
         let tasks = JSON.parse(localStorage.getItem('gtitan_tasks')) || [];
         let calendar;
 
-        const START_DATE = new Date(new Date().getFullYear(), 0, 1); // Começa em Jan deste ano
+        const START_DATE = new Date(new Date().getFullYear(), 0, 1);
 
         document.addEventListener('DOMContentLoaded', () => {
             calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
@@ -163,7 +163,7 @@
             });
             calendar.render();
             renderAll();
-            scrollToToday(); // Scroll automático para hoje
+            scrollToToday();
         });
 
         function scrollToToday() {
@@ -175,7 +175,6 @@
             }
         }
 
-        // CÁLCULO DINÂMICO DE MESES
         function getRequiredMonths() {
             let lastDate = new Date();
             const findLast = (list) => {
@@ -186,10 +185,9 @@
                 });
             };
             findLast(tasks);
-
             const diffYears = lastDate.getFullYear() - START_DATE.getFullYear();
             const diffMonths = (diffYears * 12) + (lastDate.getMonth() - START_DATE.getMonth());
-            return Math.max(12, diffMonths + 2); // No mínimo 12 meses, ou até o fim da última tarefa + 2 de folga
+            return Math.max(12, diffMonths + 2);
         }
 
         function findTaskById(list, id) {
@@ -228,8 +226,6 @@
             document.getElementById('taskForm').reset();
             document.getElementById('taskId').value = id || "";
             document.getElementById('contextParentId').value = pIdContext || "";
-
-            // Controle de visibilidade dos botões de ação
             document.getElementById('delBtn').classList.toggle('hidden', !id);
             document.getElementById('addChildBtn').classList.toggle('hidden', !id);
             document.getElementById('completeBtn').classList.toggle('hidden', !id);
@@ -308,25 +304,16 @@
             closeModal();
         };
 
-        // NOVA FUNÇÃO PARA CONCLUIR E ARQUIVAR
         function completeTask() {
             let id = document.getElementById('taskId').value;
             if (!id) return;
-
-            // Remove da árvore principal
             let taskToArchive = removeFromTree(tasks, id);
-
             if (taskToArchive) {
-                // Seta progresso em 100 e carimba data de conclusão
                 taskToArchive.progress = 100;
                 taskToArchive.completedAt = new Date().toISOString();
-
-                // Recupera o banco do arquivo, adiciona a nova e salva
                 let completedTasks = JSON.parse(localStorage.getItem('gtitan_completed')) || [];
                 completedTasks.push(taskToArchive);
                 localStorage.setItem('gtitan_completed', JSON.stringify(completedTasks));
-
-                // Sincroniza o Gantt e fecha o modal
                 saveSync();
                 closeModal();
             }
@@ -367,7 +354,6 @@
                     totalDays++;
                     let dCell = document.createElement('div');
                     dCell.className = 'day-cell';
-                    // Marcar dia de hoje
                     let currentLoopDate = new Date(d.getFullYear(), d.getMonth(), i).toISOString().split('T')[0];
                     if (currentLoopDate === todayStr) dCell.classList.add('day-today');
                     dCell.innerText = i;
@@ -382,12 +368,20 @@
             let rowIdx = 0;
             const process = (t, lv=0) => {
                 const color = getHexColor(t);
-                const qId = getQuadrant(t);
-                document.querySelector(`#${qId} .list`).innerHTML += `<div onclick="openModal(${t.id})" class="bg-white p-3 rounded-2xl shadow-sm border-l-4 cursor-pointer hover:scale-[1.02] transition-all flex justify-between items-center group" style="border-left-color:${color}"><span class="text-[11px] font-bold text-slate-700">${lv>0?'↳ ':''}${t.title}</span><span class="text-[9px] font-black text-slate-300">${t.progress}%</span></div>`;
+                
+                // VERIFICAÇÃO SE É PAI/MÃE (tem filhos)
+                const isParent = t.children && t.children.length > 0;
 
-                let calE = new Date(t.end || t.start); calE.setDate(calE.getDate()+1);
-                calendar.addEvent({ id: t.id, title: t.title, start: t.start, end: calE.toISOString().split('T')[0], backgroundColor: color });
+                // SÓ ADICIONA NA MATRIZ E NO CALENDÁRIO SE NÃO FOR PAI
+                if (!isParent) {
+                    const qId = getQuadrant(t);
+                    document.querySelector(`#${qId} .list`).innerHTML += `<div onclick="openModal(${t.id})" class="bg-white p-3 rounded-2xl shadow-sm border-l-4 cursor-pointer hover:scale-[1.02] transition-all flex justify-between items-center group" style="border-left-color:${color}"><span class="text-[11px] font-bold text-slate-700">${lv>0?'↳ ':''}${t.title}</span><span class="text-[9px] font-black text-slate-300">${t.progress}%</span></div>`;
 
+                    let calE = new Date(t.end || t.start); calE.setDate(calE.getDate()+1);
+                    calendar.addEvent({ id: t.id, title: t.title, start: t.start, end: calE.toISOString().split('T')[0], backgroundColor: color });
+                }
+
+                // O GANTT CONTINUA MOSTRANDO TUDO (PARA MANTER A ESTRUTURA)
                 const offsetDays = Math.floor((new Date(t.start + 'T12:00:00') - START_DATE) / 86400000);
                 const durationDays = Math.max(1, Math.floor((new Date((t.end || t.start) + 'T12:00:00') - new Date(t.start + 'T12:00:00')) / 86400000) + 1);
 
